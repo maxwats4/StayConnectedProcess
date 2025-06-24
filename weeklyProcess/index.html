@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmailJS + Supabase</title>
+  <!-- Add a favicon to prevent 404 error -->
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <h2>Send Emails to Supabase Users</h2>
+  <button onclick="sendEmails()">Send Emails</button>
+  <div id="status"></div>
+
+  <!-- EmailJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  
+  <script>
+    // Initialize Supabase
+    const supabase = window.supabase.createClient(
+      'https://lvpxiqanxkkscvqodajt.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2cHhpcWFueGtrc2N2cW9kYWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzOTQzODgsImV4cCI6MjA2Mzk3MDM4OH0.upsQ5yTDx-WXerx8CMsQ3XyG67YGg9OnxxozzpXmYEE'
+    );
+
+    // Initialize EmailJS
+    emailjs.init({
+      publicKey: '9-cqiANVRJ2bbos4B'
+    });
+
+    function updateStatus(message) {
+      document.getElementById('status').innerHTML += message + '<br>';
+    }
+
+    async function sendEmails() {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = ''; // Clear previous status
+      
+      try {
+        updateStatus('🔄 Fetching contacts from Supabase...');
+        
+        // Step 1: Pull from Supabase
+        const { data, error } = await supabase
+          .from('tblUser')
+          .select('*')
+          .limit(5);
+
+        if (error) {
+          console.error('Supabase error:', error);
+          throw new Error(`Supabase error: ${error.message}`);
+        }
+
+        if (!data || data.length === 0) {
+          updateStatus('❌ No contacts found in database');
+          return;
+        }
+
+        updateStatus(`✅ Found ${data.length} contacts`);
+
+        // Step 2: Send emails
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const row of data) {
+          try {
+            // Validate required fields
+            if (!row.fstrEmail || !row.fstrFirstName) {
+              console.warn('Skipping row with missing email or name:', row);
+              errorCount++;
+              continue;
+            }
+
+            updateStatus(`📧 Sending email to ${row.fstrEmail}...`);
+
+            // Template variables matching your EmailJS template exactly
+            const templateParams = {
+              to_email: row.fstrEmail,              // {{to_email}}
+              name: row.fstrFirstName,              // {{name}}
+              subject: 'Stay Connected: Weekly Notification', // {{subject}}
+              message: `Hi ${row.fstrFirstName}, this is a test message from EmailJS + Supabase.` // {{message}}
+            };
+
+            console.log('Sending with params:', templateParams);
+
+            const response = await emailjs.send(
+              'service_7d5daps',    // your service ID
+              'template_j4mo595',   // your template ID
+              templateParams
+            );
+
+            console.log('✅ Email sent successfully:', response);
+            updateStatus(`✅ Sent to ${row.fstrEmail}`);
+            successCount++;
+
+            // Add delay between emails to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+          } catch (emailError) {
+            console.error(`❌ Failed to send email to ${row.fstrEmail}:`, emailError);
+            updateStatus(`❌ Failed to send to ${row.fstrEmail}: ${emailError.text || emailError.message}`);
+            errorCount++;
+          }
+        }
+
+        updateStatus(`🎉 Completed! Success: ${successCount}, Errors: ${errorCount}`);
+
+      } catch (err) {
+        console.error('❌ Error:', err);
+        updateStatus(`❌ Error: ${err.message}`);
+      }
+    }
+  </script>
+</body>
+</html>
