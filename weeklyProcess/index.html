@@ -230,8 +230,8 @@
             const connectionSummary = connections.map(conn => {
               const lastContactDisplay = conn.fdtmLastContact 
                 ? new Date(conn.fdtmLastContact).toDateString() 
-                : 'Never contacted';
-              return `- Name: ${conn.fstrFirstName} ${conn.fstrLastName}, Phone: ${conn.fstrPhoneNumber}, Email: ${conn.fstrEmail}, Last Contact: ${lastContactDisplay}`;
+                : 'No Contact Date';
+              return `- Name: ${conn.fstrFirstName} ${conn.fstrLastName}, Last Contact: ${lastContactDisplay}`;
             }).join('\n');
 
             // Template variables matching your EmailJS template exactly
@@ -239,6 +239,7 @@
               to_email: user.fstrEmail,              // {{to_email}}
               name: user.fstrFirstName,              // {{name}}
               subject: 'Connection Reminder: Time to Reach Out', // {{subject}}
+              //message: `Hi ${user.fstrFirstName},\n\nYou have ${connections.length} connections that haven't been contacted in over 6 months:\n\n${connectionSummary}\n\nConsider reaching out to maintain these valuable relationships!\n\nBest regards,\nStay Connected` // {{message}}
               message: `Hi ${user.fstrFirstName},\n\nYou have ${connections.length} connections that haven't been contacted in over 6 months:\n\n${connectionSummary}\n\nConsider reaching out to maintain these valuable relationships!\n\nBest regards,\nStay Connected` // {{message}}
             };
 
